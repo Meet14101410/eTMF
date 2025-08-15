@@ -1,0 +1,83 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <map>
+#include <memory>
+#include <chrono>
+
+// Represents a document's metadata
+struct Document {
+    int id;
+    std::string name;
+    std::string path;
+    std::string tmf_zone;
+    std::string created_by;
+    std::string created_at;
+};
+
+// A class to manage the TMF documents
+class ETMFManager {
+private:
+    std::map<int, std::shared_ptr<Document>> document_store;
+    int next_id = 1;
+
+    // A helper to get a timestamp
+    std::string get_timestamp() {
+        auto now = std::chrono::system_clock::now();
+        auto in_time_t = std::chrono::system_clock::to_time_t(now);
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%dT%H:%M:%S");
+        return ss.str();
+    }
+
+public:
+    // Adds a new document to the eTMF
+    void add_document(const std::string& name, const std::string& tmf_zone, const std::string& created_by) {
+        auto new_doc = std::make_shared<Document>();
+        new_doc->id = next_id++;
+        new_doc->name = name;
+        new_doc->tmf_zone = tmf_zone;
+        new_doc->created_by = created_by;
+        new_doc->created_at = get_timestamp();
+        // Simulate saving the file to a secure location
+        new_doc->path = "/data/tmf_files/" + std::to_string(new_doc->id) + "_" + new_doc->name;
+
+        document_store[new_doc->id] = new_doc;
+        std::cout << "Document added: " << new_doc->name << " to " << new_doc->tmf_zone << std::endl;
+    }
+
+    // Finds a document by its ID
+    std::shared_ptr<Document> find_document(int id) {
+        auto it = document_store.find(id);
+        if (it != document_store.end()) {
+            return it->second;
+        }
+        return nullptr;
+    }
+
+    // Lists all documents in a specific TMF zone
+    void list_documents_in_zone(const std::string& zone) {
+        std::cout << "\n--- Documents in TMF Zone: " << zone << " ---" << std::endl;
+        for (const auto& pair : document_store) {
+            if (pair.second->tmf_zone == zone) {
+                std::cout << "ID: " << pair.second->id << ", Name: " << pair.second->name 
+                          << ", Created By: " << pair.second->created_by << std::endl;
+            }
+        }
+    }
+};
+
+int main() {
+    ETMFManager manager;
+
+    // Simulate adding some documents
+    manager.add_document("Protocol.pdf", "Study Management", "Dr. Smith");
+    manager.add_document("ICF_v1.0.docx", "Regulatory", "Jane Doe");
+    manager.add_document("Patient-Consent-P001.pdf", "Participant-Specific", "Nurse Alice");
+    manager.add_document("Site-CV-S002.pdf", "Site Management", "Site Coordinator Bob");
+
+    manager.list_documents_in_zone("Regulatory");
+    manager.list_documents_in_zone("Participant-Specific");
+
+    return 0;
+}
