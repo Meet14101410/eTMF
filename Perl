@@ -1,0 +1,80 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Data::Dumper;
+
+# The file to be used as our document log
+my $doc_log_file = 'etmf_doc_log.txt';
+
+# In a real-world scenario, this would be a database.
+# Here, we'll store metadata in a hash of hashes.
+my %etmf_metadata;
+
+# Function to process the document log and populate the metadata hash
+sub process_log {
+    my $log_file = shift;
+    open my $fh, '<', $log_file or die "Cannot open '$log_file': $!";
+
+    while (my $line = <$fh>) {
+        chomp $line;
+        next if $line =~ /^#/; # Skip comments
+        
+        # Expected log format: ID|Name|TMFZone|CreatedBy|Timestamp
+        my ($id, $name, $zone, $created_by, $timestamp) = split /\|/, $line;
+        next unless $id && $name && $zone && $created_by;
+
+        $etmf_metadata{$id} = {
+            name => $name,
+            zone => $zone,
+            created_by => $created_by,
+            timestamp => $timestamp
+        };
+    }
+    close $fh;
+}
+
+# Function to generate a simple report of all documents
+sub generate_report {
+    my $report_file = shift;
+    open my $fh, '>', $report_file or die "Cannot write to '$report_file': $!";
+
+    print $fh "--- eTMF Document Report ---\n";
+    print $fh "Total documents: " . scalar(keys %etmf_metadata) . "\n\n";
+
+    # Count documents per TMF zone
+    my %zone_counts;
+    foreach my $id (keys %etmf_metadata) {
+        $zone_counts{$etmf_metadata{$id}->{zone}}++;
+    }
+
+    print $fh "Documents per TMF Zone:\n";
+    foreach my $zone (sort keys %zone_counts) {
+        print $fh "  $zone: $zone_counts{$zone} documents\n";
+    }
+    print $fh "\n";
+
+    # List all documents
+    print $fh "All Documents:\n";
+    foreach my $id (sort { $a <=> $b } keys %etmf_metadata) {
+        my $doc = $etmf_metadata{$id};
+        print $fh "  ID: $id, Name: $doc->{name}, Zone: $doc->{zone}\n";
+    }
+
+    close $fh;
+    print "Report generated: $report_file\n";
+}
+
+# Main script logic
+process_log($doc_log_file);
+generate_report('etmf_report.txt');
+
+__END__
+# Data for etmf_doc_log.txt
+# ID|Name|TMFZone|CreatedBy|Timestamp
+1|Protocol.pdf|Study Management|Dr. Smith|2025-08-15T10:00:00
+2|ICF_v1.0.docx|Regulatory|Jane Doe|2025-08-15T10:01:00
+3|Patient-Consent-P001.pdf|Participant-Specific|Nurse Alice|2025-08-15T10:02:00
+4|Patient-Consent-P002.pdf|Participant-Specific|Nurse Alice|2025-08-15T10:03:00
+5|Investigator_Brochure_v2.0.pdf|Regulatory|Dr. Smith|2025-08-15T10:04:00
+6|SAE_Report_P001.pdf|Safety Reporting|Dr. Smith|2025-08-15T10:05:00
