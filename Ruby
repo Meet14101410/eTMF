@@ -1,0 +1,72 @@
+# Represents a document and its metadata
+class Document
+  attr_reader :id, :name, :tmf_zone, :created_by, :created_at, :path
+
+  @@next_id = 1
+
+  def initialize(name, tmf_zone, created_by)
+    @id = @@next_id
+    @@next_id += 1
+    @name = name
+    @tmf_zone = tmf_zone
+    @created_by = created_by
+    @created_at = Time.now.iso8601
+    @path = "/data/tmf_files/#{id}_#{name}"
+  end
+
+  def to_s
+    "ID: #{id}, Name: #{name}, Zone: #{tmf_zone}, Created By: #{created_by}"
+  end
+end
+
+# Manages the collection of documents
+class ETMFManager
+  def initialize
+    @document_store = {}
+  end
+
+  def add_document(name, tmf_zone, created_by)
+    doc = Document.new(name, tmf_zone, created_by)
+    @document_store[doc.id] = doc
+    puts "Document added: #{doc.name} to #{doc.tmf_zone}"
+    doc
+  end
+
+  def find_document_by_id(id)
+    @document_store[id]
+  end
+
+  def list_documents_in_zone(zone)
+    puts "\n--- Documents in TMF Zone: #{zone} ---"
+    documents_in_zone = @document_store.values.select { |doc| doc.tmf_zone == zone }
+    if documents_in_zone.empty?
+      puts "No documents found."
+    else
+      documents_in_zone.each do |doc|
+        puts doc.to_s
+      end
+    end
+  end
+end
+
+# Main script logic
+manager = ETMFManager.new
+
+# Simulate adding some documents
+manager.add_document("Protocol_v3.pdf", "Study Management", "Dr. Green")
+manager.add_document("ICF_v2.1.docx", "Regulatory", "Tim Miller")
+manager.add_document("Patient-Consent-P005.pdf", "Participant-Specific", "Nurse Rachel")
+manager.add_document("Patient-Consent-P006.pdf", "Participant-Specific", "Nurse Rachel")
+
+# Find and display a specific document
+doc_id_to_find = 2
+found_doc = manager.find_document_by_id(doc_id_to_find)
+if found_doc
+  puts "\nFound document with ID #{doc_id_to_find}: #{found_doc.name}"
+else
+  puts "\nDocument with ID #{doc_id_to_find} not found."
+end
+
+# List documents by TMF Zone
+manager.list_documents_in_zone("Regulatory")
+manager.list_documents_in_zone("Participant-Specific")
